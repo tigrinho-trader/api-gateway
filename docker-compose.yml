@@ -1,0 +1,88 @@
+# Sobe a aplicacao inteira localmente. Espera os repos lado a lado:
+#   tigrinho-trader/
+#     api-gateway/  (este)   trading-service/   wallet-service/   market-data-service/
+#
+#   docker compose up --build
+#   curl http://localhost:8080/api/cotacoes
+#
+# Sem acesso a Binance? SIMULADOR=true BINANCE=false docker compose up --build
+name: tigrinho-trader
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: tigrinho
+      POSTGRES_PASSWORD: tigrinho
+      POSTGRES_DB: tigrinho
+    volumes:
+      - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tigrinho"]
+      interval: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    ports:
+      - "15672:15672" # painel: guest/guest
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      retries: 10
+
+  market-data-service:
+    build: ../market-data-service
+    environment:
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      BINANCE_ENABLED: ${BINANCE:-true}
+      SIMULADOR_ENABLED: ${SIMULADOR:-false}
+    depends_on:
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  wallet-service:
+    build: ../wallet-service
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/wallet
+      RABBITMQ_HOST: rabbitmq
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  trading-service:
+    build: ../trading-service
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/trading
+      RABBITMQ_HOST: rabbitmq
+      MARKET_DATA_URL: http://market-data-service:8083
+      WALLET_URL: http://wallet-service:8082
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  api-gateway:
+    build: .
+    ports:
+      - "8080:8080"
+    environment:
+      TRADING_URL: http://trading-service:8081
+      WALLET_URL: http://wallet-service:8082
+      MARKET_DATA_URL: http://market-data-service:8083
+      NOTIFICATION_URL: http://notification-service:8084
+    depends_on:
+      - trading-service
+      - wallet-service
+      - market-data-service
+
+volumes:
+  pgdata:
