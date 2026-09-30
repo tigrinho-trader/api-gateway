@@ -4,6 +4,7 @@
 #
 #   docker compose up --build
 #   curl http://localhost:8080/api/cotacoes
+#   ./scripts/teste-integracao.sh     # teste ponta a ponta com o ambiente no ar
 #
 # Sem acesso a Binance? SIMULADOR=true BINANCE=false docker compose up --build
 name: tigrinho-trader
@@ -35,9 +36,11 @@ services:
     ports:
       - "15672:15672" # painel: guest/guest
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      # So libera os servicos quando a porta AMQP (5672) esta aberta. Nao usa rabbitmq-diagnostics:
+      # ele roda como root e pode criar o .erlang.cookie antes do servidor, que entao cai com eacces.
+      test: ["CMD", "nc", "-z", "127.0.0.1", "5672"]
       interval: 10s
-      retries: 10
+      retries: 20
 
   market-data-service:
     build: ../market-data-service
@@ -73,7 +76,7 @@ services:
   api-gateway:
     build: .
     ports:
-      - "8080:8080"
+      - "${GATEWAY_PORT:-8080}:8080" # GATEWAY_PORT=8090 se a 8080 estiver ocupada
     environment:
       TRADING_URL: http://trading-service:8081
       WALLET_URL: http://wallet-service:8082

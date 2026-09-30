@@ -49,6 +49,18 @@ curl -H "X-Usuario-Id: ana" localhost:8080/api/carteira/extrato
 
 Painel do RabbitMQ: http://localhost:15672 (guest/guest).
 
+Porta 8080 ocupada na sua maquina? `GATEWAY_PORT=8090 docker compose up --build`.
+
+### Teste de integracao
+
+Com o ambiente no ar, roda uma rodada completa passando por todos os servicos e pelas duas filas
+(`preco.atualizado` e `ordem.executada`) e sai com codigo 1 se algo falhar:
+
+```bash
+./scripts/teste-integracao.sh
+GATEWAY_URL=http://localhost:8090 ./scripts/teste-integracao.sh   # se mudou a porta
+```
+
 ## Repositorios do projeto
 
 - [trading-service](https://github.com/tigrinho-trader/trading-service)
