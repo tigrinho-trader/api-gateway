@@ -1,8 +1,9 @@
 # Sobe a aplicacao inteira localmente. Espera os repos lado a lado:
 #   tigrinho-trader/
-#     api-gateway/  (este)   trading-service/   wallet-service/   market-data-service/
+#     api-gateway/  (este)   trading-service/   wallet-service/   market-data-service/   frontend/
 #
 #   docker compose up --build
+#   http://localhost:3000             # o jogo
 #   curl http://localhost:8080/api/cotacoes
 #   ./scripts/teste-integracao.sh     # teste ponta a ponta com o ambiente no ar
 #
@@ -86,6 +87,15 @@ services:
       - trading-service
       - wallet-service
       - market-data-service
+
+  frontend:
+    build: ../frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    environment:
+      GATEWAY_URL: http://api-gateway:8080
+    depends_on:
+      - api-gateway
 
 volumes:
   pgdata:
