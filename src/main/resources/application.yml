@@ -4,6 +4,40 @@ server:
 spring:
   application:
     name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowed-origins: ${FRONTEND_ORIGINS:http://localhost:5173}
+            allowed-methods: GET,POST,PUT,DELETE,OPTIONS
+            allowed-headers: '*'
+      # /api/<recurso>/** -> servico dono do recurso, sem o prefixo /api
+      routes:
+        - id: trading
+          uri: ${TRADING_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/ordens,/api/ordens/**
+          filters:
+            - StripPrefix=1
+        - id: wallet
+          uri: ${WALLET_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/carteira,/api/carteira/**
+          filters:
+            - StripPrefix=1
+        - id: market-data
+          uri: ${MARKET_DATA_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/cotacoes,/api/cotacoes/**
+          filters:
+            - StripPrefix=1
+        - id: notification
+          uri: ${NOTIFICATION_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/notificacoes,/api/notificacoes/**
+          filters:
+            - StripPrefix=1
 
 management:
   endpoints:

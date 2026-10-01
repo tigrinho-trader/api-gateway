@@ -11,6 +11,56 @@ Porta de entrada unica da aplicacao (Spring Cloud Gateway). Valida o token JWT e
 - Roteia (sincrono, REST) para trading-service, wallet-service, market-data-service e notification-service.
 - Valida JWT do Auth0 em toda requisicao antes de rotear.
 
+## Rotas
+
+| Caminho publico | Servico | Caminho interno |
+|---|---|---|
+| `/api/ordens/**` | trading-service (8081) | `/ordens/**` |
+| `/api/carteira/**` | wallet-service (8082) | `/carteira/**` |
+| `/api/cotacoes/**` | market-data-service (8083) | `/cotacoes/**` |
+| `/api/notificacoes/**` | notification-service (8084) | `/notificacoes/**` |
+
+Enderecos configuraveis por `TRADING_URL`, `WALLET_URL`, `MARKET_DATA_URL`, `NOTIFICATION_URL`; origem do frontend liberada no CORS por `FRONTEND_ORIGINS`.
+
+> Validacao do JWT (Auth0) entra na Etapa 3. Ate la o cliente manda `X-Usuario-Id` direto; depois o gateway
+> passa a preencher esse cabecalho a partir do `sub` do token e descartar o que vier do cliente.
+
+## Subindo a aplicacao inteira
+
+Com os repos clonados lado a lado (`api-gateway`, `trading-service`, `wallet-service`, `market-data-service`):
+
+```bash
+docker compose up --build
+# sem acesso a Binance:
+SIMULADOR=true BINANCE=false docker compose up --build
+```
+
+Exemplo de uma rodada:
+
+```bash
+curl localhost:8080/api/cotacoes
+curl -H "X-Usuario-Id: ana" localhost:8080/api/carteira
+curl -H "X-Usuario-Id: ana" -H "Content-Type: application/json" \
+     -d '{"simbolo":"BTCUSDT","tipo":"ALTA","valor":100,"duracaoSegundos":15}' localhost:8080/api/ordens
+# ~15s depois
+curl -H "X-Usuario-Id: ana" localhost:8080/api/ordens
+curl -H "X-Usuario-Id: ana" localhost:8080/api/carteira/extrato
+```
+
+Painel do RabbitMQ: http://localhost:15672 (guest/guest).
+
+Porta 8080 ocupada na sua maquina? `GATEWAY_PORT=8090 docker compose up --build`.
+
+### Teste de integracao
+
+Com o ambiente no ar, roda uma rodada completa passando por todos os servicos e pelas duas filas
+(`preco.atualizado` e `ordem.executada`) e sai com codigo 1 se algo falhar:
+
+```bash
+./scripts/teste-integracao.sh
+GATEWAY_URL=http://localhost:8090 ./scripts/teste-integracao.sh   # se mudou a porta
+```
+
 ## Repositorios do projeto
 
 - [trading-service](https://github.com/tigrinho-trader/trading-service)
