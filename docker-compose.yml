@@ -62,6 +62,9 @@ services:
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/wallet
       RABBITMQ_HOST: rabbitmq
+      # Pix (AbacatePay): defina no .env ao lado deste arquivo (ignorado pelo git). Vazio = Pix desligado.
+      ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
+      WALLET_SANDBOX_HABILITADO: ${WALLET_SANDBOX_HABILITADO:-true}
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
