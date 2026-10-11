@@ -2,11 +2,15 @@
 #   tigrinho-trader/
 #     api-gateway/  (este)   trading-service/   wallet-service/   market-data-service/   user-service/   frontend/
 #
-# Login pelo Auth0: exporte AUTH0_DOMAIN, AUTH0_AUDIENCE e AUTH0_CLIENT_ID (SPA) antes de subir
-# (ou ponha num arquivo .env ao lado deste). ADMIN_EMAILS=email1,email2 vira ADMIN no primeiro login.
+# Login: OpenID Connect com um Keycloak local (servico keycloak, reino tigrinho), sem conta externa.
+# Usuario de desenvolvimento: admin / admin123 (e-mail admin@tigrinho.local, vira ADMIN no primeiro login).
+# Console do Keycloak: http://localhost:8180 (admin/admin). Tudo isso so vale para ambiente local.
+# Para usar o Auth0 (ou outro provedor), defina AUTH_ISSUER, AUTH_JWKS_URI, AUTH_AUDIENCE e as VITE_OIDC_*
+# no shell ou num arquivo .env ao lado deste (ver README). ADMIN_EMAILS=email1,email2 vira ADMIN no primeiro login.
 #
 #   docker compose up --build
 #   http://localhost:3000             # o jogo
+#   http://localhost:8180             # console do Keycloak
 #   curl http://localhost:8080/api/cotacoes
 #   ./scripts/teste-integracao.sh     # teste ponta a ponta com o ambiente no ar
 #
@@ -46,6 +50,33 @@ services:
       interval: 10s
       retries: 20
 
+  # Provedor OpenID Connect local. KC_HOSTNAME fixa o emissor em http://localhost:8180/realms/tigrinho
+  # (o que o navegador ve), mesmo quando o gateway busca as chaves por http://keycloak:8080.
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      # admin do console: so para desenvolvimento local
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+      KC_HEALTH_ENABLED: "true"
+    ports:
+      - "8180:8080"
+    volumes:
+      - ./infra/keycloak:/opt/keycloak/data/import:ro
+    healthcheck:
+      # a imagem nao tem curl: usa o /dev/tcp do bash no /health/ready da porta de gerenciamento (9000)
+      test:
+        - CMD
+        - bash
+        - -c
+        - 'exec 3<>/dev/tcp/127.0.0.1/9000 && printf "GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3 && head -n1 <&3 | grep -q " 200"'
+      interval: 10s
+      start_period: 30s
+      retries: 30
+
   market-data-service:
     build: ../market-data-service
     environment:
@@ -73,7 +104,7 @@ services:
     build: ../user-service
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/usuarios
-      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-admin@tigrinho.local}
     depends_on:
       postgres: { condition: service_healthy }
 
@@ -98,23 +129,29 @@ services:
       MARKET_DATA_URL: http://market-data-service:8083
       NOTIFICATION_URL: http://notification-service:8084
       USER_URL: http://user-service:8085
-      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-tigrinho-trader.us.auth0.com}
-      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://api.tigrinho-trader}
-      AUTH0_CLAIMS_NAMESPACE: ${AUTH0_CLAIMS_NAMESPACE:-https://tigrinho-trader/}
+      # emissor = o que o navegador ve; chaves buscadas pela rede interna do compose
+      AUTH_ISSUER: ${AUTH_ISSUER:-http://localhost:8180/realms/tigrinho}
+      AUTH_JWKS_URI: ${AUTH_JWKS_URI:-http://keycloak:8080/realms/tigrinho/protocol/openid-connect/certs}
+      AUTH_AUDIENCE: ${AUTH_AUDIENCE:-tigrinho-api}
+      AUTH_CLAIMS_NAMESPACE: ${AUTH_CLAIMS_NAMESPACE:-https://tigrinho-trader/}
     depends_on:
-      - user-service
-      - trading-service
-      - wallet-service
-      - market-data-service
+      # o JWKS so e buscado no primeiro token: o gateway nao precisa esperar o Keycloak ficar pronto
+      keycloak: { condition: service_started }
+      user-service: { condition: service_started }
+      trading-service: { condition: service_started }
+      wallet-service: { condition: service_started }
+      market-data-service: { condition: service_started }
 
   frontend:
     build:
       context: ../frontend
-      # o Vite embute essas variaveis no build (o Dockerfile do frontend declara os ARGs)
+      # o Vite embute essas variaveis no build (o Dockerfile do frontend declara os ARGs).
+      # Vazias = Keycloak local (padroes do frontend); para o Auth0 veja o README.
       args:
-        VITE_AUTH0_DOMAIN: ${AUTH0_DOMAIN:-tigrinho-trader.us.auth0.com}
-        VITE_AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-}
-        VITE_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://api.tigrinho-trader}
+        VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:-}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-}
+        VITE_OIDC_AUDIENCE: ${VITE_OIDC_AUDIENCE:-}
+        VITE_OIDC_PROVEDOR: ${VITE_OIDC_PROVEDOR:-}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     environment:

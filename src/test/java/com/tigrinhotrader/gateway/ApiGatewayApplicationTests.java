@@ -50,14 +50,15 @@ import org.springframework.test.web.reactive.server.WebTestClient;
 /**
  * Sobe o gateway apontando cada rota para um servidor HTTP falso que responde
  * "servico:caminho:X-Usuario-Id" (e devolve X-Usuario-Email/Nome/Avatar/Papel recebidos em Eco-*).
- * O Auth0 e simulado por um par de chaves RSA gerado aqui, com o JWKS servido por outro servidor falso;
- * o user-service falso responde o status da conta conforme o sub e conta as consultas.
+ * O provedor OpenID Connect (Keycloak/Auth0) e simulado por um par de chaves RSA gerado aqui, com o JWKS
+ * servido por outro servidor falso; o user-service falso responde o status da conta conforme o sub e conta as consultas.
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 class ApiGatewayApplicationTests {
 
-    private static final String EMISSOR = "https://tigrinho-teste.auth0.local/";
-    private static final String AUDIENCIA = "https://api.tigrinho-teste";
+    /** Emissor no formato do Keycloak (reino de teste). */
+    private static final String EMISSOR = "http://localhost:8180/realms/tigrinho-teste";
+    private static final String AUDIENCIA = "tigrinho-api";
     private static final String NS = "https://tigrinho-trader/";
     private static final String ORIGEM = "http://localhost:5173";
 
@@ -93,9 +94,9 @@ class ApiGatewayApplicationTests {
         registro.add("MARKET_DATA_URL", () -> url(MARKET_DATA));
         registro.add("NOTIFICATION_URL", () -> url(NOTIFICATION));
         registro.add("USER_URL", () -> url(USUARIOS));
-        registro.add("AUTH0_JWKS_URI", () -> url(JWKS) + "/.well-known/jwks.json");
-        registro.add("AUTH0_ISSUER", () -> EMISSOR);
-        registro.add("AUTH0_AUDIENCE", () -> AUDIENCIA);
+        registro.add("AUTH_JWKS_URI", () -> url(JWKS) + "/realms/tigrinho-teste/protocol/openid-connect/certs");
+        registro.add("AUTH_ISSUER", () -> EMISSOR);
+        registro.add("AUTH_AUDIENCE", () -> AUDIENCIA);
         registro.add("AUTH_STATUS_TIMEOUT", () -> "500ms");
     }
 
@@ -174,7 +175,9 @@ class ApiGatewayApplicationTests {
 
     @Test
     void emailNomeEAvatarComNamespaceVaoCodificados() {
+        // formato do Auth0: claims com namespace e aud com o /userinfo
         String jwt = assinar(claims("google-oauth2|123")
+                .audience(List.of(AUDIENCIA, "https://tigrinho-trader.us.auth0.com/userinfo"))
                 .claim(NS + "email", "joão.ação@exemplo.com.br")
                 .claim(NS + "name", "João da Silva Ação")
                 .claim(NS + "picture", "https://cdn.exemplo.com/a b.png?x=1&y=ç")
@@ -204,6 +207,104 @@ class ApiGatewayApplicationTests {
                 .expectHeader().valueEquals("Eco-Nome", codificar("Maria Conceição"))
                 .expectHeader().valueEquals("Eco-Avatar", codificar("https://s.gravatar.com/avatar/1.png"))
                 .expectBody(String.class).isEqualTo("usuarios:/usuarios/me:auth0|padrao");
+    }
+
+    @Test
+    void tokenNoFormatoDoKeycloak() {
+        // access token tipico do Keycloak: sub UUID, aud com a API e o account, claims OIDC padrao
+        String sub = "8f14e45f-ceea-467a-9575-a1b2c3d4e5f6";
+        String jwt = assinar(claims(sub)
+                .audience(List.of(AUDIENCIA, "account"))
+                .claim("typ", "Bearer")
+                .claim("azp", "flecha-certeira")
+                .claim("scope", "openid profile email")
+                .claim("realm_access", Map.of("roles", List.of("default-roles-tigrinho", "offline_access")))
+                .claim("email", "ana@tigrinho.local")
+                .claim("email_verified", true)
+                .claim("name", "Ana Souza")
+                .claim("preferred_username", "ana")
+                .claim("given_name", "Ana")
+                .claim("family_name", "Souza"));
+        cliente.get().uri("/api/usuarios/me").headers(h -> h.setBearerAuth(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Eco-Email", "ana%40tigrinho.local")
+                .expectHeader().valueEquals("Eco-Nome", "Ana+Souza")
+                .expectHeader().doesNotExist("Eco-Avatar")
+                .expectBody(String.class).isEqualTo("usuarios:/usuarios/me:" + sub);
+    }
+
+    @Test
+    void audienciaComoTextoUnicoTambemVale() {
+        String jwt = assinar(claims("kc|aud-unica").audience(AUDIENCIA));
+        cliente.get().uri("/api/carteira").headers(h -> h.setBearerAuth(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).isEqualTo("wallet:/carteira:kc|aud-unica");
+    }
+
+    static Stream<Arguments> emailVerificado() {
+        return Stream.of(
+                Arguments.of("booleano false", false, false),
+                Arguments.of("texto false", "false", false),
+                Arguments.of("texto FALSE", " FALSE ", false),
+                Arguments.of("booleano true", true, true),
+                Arguments.of("texto true", "true", true),
+                Arguments.of("ausente", null, true));
+    }
+
+    @ParameterizedTest(name = "email_verified {0} -> envia e-mail: {2}")
+    @MethodSource("emailVerificado")
+    void emailSoVaiQuandoNaoEstaMarcadoComoNaoVerificado(String caso, Object verificado, boolean envia) {
+        String jwt = assinar(claims("kc|verificacao")
+                .claim("email", "admin@tigrinho.local")
+                .claim("email_verified", verificado));
+        var resposta = cliente.get().uri("/api/usuarios/me").headers(h -> h.setBearerAuth(jwt))
+                .exchange()
+                .expectStatus().isOk();
+        if (envia) {
+            resposta.expectHeader().valueEquals("Eco-Email", "admin%40tigrinho.local");
+        } else {
+            resposta.expectHeader().doesNotExist("Eco-Email");
+        }
+        resposta.expectBody(String.class).isEqualTo("usuarios:/usuarios/me:kc|verificacao");
+    }
+
+    @Test
+    void emailVerifiedComNamespaceTambemBloqueiaOEmail() {
+        String jwt = assinar(claims("auth0|nao-verificado")
+                .claim(NS + "email", "admin@tigrinho.local")
+                .claim(NS + "email_verified", false)
+                .claim(NS + "name", "Fulano"));
+        cliente.get().uri("/api/usuarios/me").headers(h -> h.setBearerAuth(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().doesNotExist("Eco-Email")
+                .expectHeader().valueEquals("Eco-Nome", "Fulano");
+    }
+
+    @Test
+    void semNameUsaOPreferredUsername() {
+        String jwt = assinar(claims("kc|sem-nome")
+                .claim("email", "jogador@tigrinho.local")
+                .claim("email_verified", true)
+                .claim("preferred_username", "flecheiro_ç"));
+        cliente.get().uri("/api/usuarios/me").headers(h -> h.setBearerAuth(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Eco-Nome", codificar("flecheiro_ç"))
+                .expectHeader().valueEquals("Eco-Email", "jogador%40tigrinho.local");
+    }
+
+    @Test
+    void nameVazioTambemCaiNoPreferredUsername() {
+        String jwt = assinar(claims("kc|nome-vazio")
+                .claim("name", "")
+                .claim("preferred_username", "ana"));
+        cliente.get().uri("/api/usuarios/me").headers(h -> h.setBearerAuth(jwt))
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Eco-Nome", "ana");
     }
 
     // ---------- rotas publicas ----------
@@ -275,6 +376,9 @@ class ApiGatewayApplicationTests {
                 Arguments.of("assinatura de outra chave", assinar(claims("auth0|ana"), CHAVE_INTRUSA)),
                 Arguments.of("kid desconhecido", assinar(claims("auth0|ana"), CHAVE_DESCONHECIDA)),
                 Arguments.of("emissor errado", assinar(claims("auth0|ana").issuer("https://outro.auth0.com/"))),
+                Arguments.of("outro reino do Keycloak",
+                        assinar(claims("auth0|ana").issuer("http://localhost:8180/realms/outro"))),
+                Arguments.of("so a audiencia account", assinar(claims("auth0|ana").audience(List.of("account")))),
                 Arguments.of("audiencia errada", assinar(claims("auth0|ana").audience("https://outra-api"))),
                 Arguments.of("sem audiencia", assinar(claims("auth0|ana").audience((String) null))),
                 Arguments.of("vencido", tokenVencido()),
@@ -484,7 +588,7 @@ class ApiGatewayApplicationTests {
         return new JWTClaimsSet.Builder()
                 .subject(sub)
                 .issuer(EMISSOR)
-                .audience(List.of(AUDIENCIA, EMISSOR + "userinfo"))
+                .audience(List.of(AUDIENCIA, "account"))
                 .issueTime(Date.from(agora))
                 .expirationTime(Date.from(agora.plusSeconds(300)));
     }

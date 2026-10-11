@@ -41,7 +41,7 @@
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
-    <!-- Valida o JWT do Auth0 (WebFlux) -->
+    <!-- Valida o JWT do provedor OpenID Connect (Keycloak/Auth0) no WebFlux -->
     <dependency>
       <groupId>org.springframework.boot</groupId>
       <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>

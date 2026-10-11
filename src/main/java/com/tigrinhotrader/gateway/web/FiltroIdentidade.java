@@ -21,6 +21,7 @@ import reactor.core.publisher.Mono;
  * cliente e, se a requisicao estiver autenticada, preenche:
  * X-Usuario-Id = sub (sem codificacao); X-Usuario-Email / -Nome / -Avatar = claim com namespace ou a
  * padrao (email, name, picture), em URL-encoding UTF-8; omitidos se a claim nao existir.
+ * Regras OIDC: sem e-mail quando email_verified = false; sem name, o nome vem de preferred_username.
  * Roda depois da seguranca (que e um WebFilter) e antes do roteamento.
  */
 @Component
@@ -67,8 +68,11 @@ public class FiltroIdentidade implements GlobalFilter, Ordered {
 
     private void preencher(HttpHeaders cabecalhos, Jwt jwt) {
         cabecalhos.set(ID, jwt.getSubject());
-        definirCodificado(cabecalhos, EMAIL, claim(jwt, "email"));
-        definirCodificado(cabecalhos, NOME, claim(jwt, "name"));
+        if (!emailNaoVerificado(jwt)) {
+            definirCodificado(cabecalhos, EMAIL, claim(jwt, "email"));
+        }
+        String nome = claim(jwt, "name");
+        definirCodificado(cabecalhos, NOME, StringUtils.hasText(nome) ? nome : claim(jwt, "preferred_username"));
         definirCodificado(cabecalhos, AVATAR, claim(jwt, "picture"));
     }
 
@@ -76,6 +80,16 @@ public class FiltroIdentidade implements GlobalFilter, Ordered {
     private String claim(Jwt jwt, String nome) {
         String comNamespace = jwt.getClaimAsString(namespace + nome);
         return StringUtils.hasText(comNamespace) ? comNamespace : jwt.getClaimAsString(nome);
+    }
+
+    /**
+     * true so quando email_verified existe e vale false (booleano ou o texto "false"). Sem a claim o e-mail
+     * segue: o Auth0 nao a coloca no access token por padrao. Protege o ADMIN_EMAILS de quem se cadastra com
+     * o e-mail de outra pessoa.
+     */
+    private boolean emailNaoVerificado(Jwt jwt) {
+        String verificado = claim(jwt, "email_verified");
+        return verificado != null && "false".equalsIgnoreCase(verificado.trim());
     }
 
     private static void definirCodificado(HttpHeaders cabecalhos, String cabecalho, String valor) {

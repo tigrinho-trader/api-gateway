@@ -5,9 +5,11 @@
 #   trading -> wallet e market-data (REST)
 #   market-data -> trading (preco.atualizado) e trading -> wallet (ordem.executada) via RabbitMQ
 #
-# Desde a Etapa 3 o gateway exige um access token do Auth0 (o X-Usuario-Id vindo do cliente e descartado).
-# Pegue um token do usuario de teste (ex.: no frontend logado, ou pelo painel do Auth0 em
-# APIs > Test) e passe em TOKEN:
+# Desde a Etapa 3 o gateway exige um access token OpenID Connect (o X-Usuario-Id vindo do cliente e
+# descartado). Com o Keycloak local do compose: entre no jogo (http://localhost:3000) com admin / admin123,
+# abra o DevTools > Network, clique numa chamada /api/... e copie o cabecalho Authorization (sem "Bearer ").
+# O cliente flecha-certeira e publico (PKCE) e nao aceita grant_type=password, por isso o token vem do
+# navegador. Ele vale 5 minutos: rode o script logo depois de copiar. Detalhes no README.
 #
 #   TOKEN=eyJ... ./scripts/teste-integracao.sh
 #   TOKEN=eyJ... GATEWAY_URL=http://localhost:8090 ./scripts/teste-integracao.sh
@@ -17,7 +19,7 @@
 GW=${GATEWAY_URL:-http://localhost:8080}
 RABBIT=${RABBIT_URL:-http://localhost:15672}
 if [ -z "$TOKEN" ]; then
-  echo "Defina TOKEN com um access token do Auth0: TOKEN=eyJ... $0"
+  echo "Defina TOKEN com um access token (Keycloak local: copie do navegador, ver README): TOKEN=eyJ... $0"
   exit 1
 fi
 PY=$(command -v python3 || command -v python)

@@ -30,7 +30,7 @@ import org.springframework.web.cors.reactive.UrlBasedCorsConfigurationSource;
 import reactor.core.publisher.Mono;
 
 /**
- * Seguranca do gateway: valida o JWT do Auth0 (assinatura via JWKS, iss, aud, exp) e decide quem e
+ * Seguranca do gateway: valida o JWT do provedor OpenID Connect (assinatura via JWKS, iss, aud, exp) e decide quem e
  * publico. API stateless: sem sessao, sem CSRF, sem login por formulario.
  */
 @Configuration
@@ -88,8 +88,8 @@ public class SegurancaConfig {
     }
 
     /**
-     * Decoder RS256 com as chaves do JWKS do Auth0. O JWKS so e buscado na primeira validacao
-     * (nada de rede na inicializacao) e fica em cache.
+     * Decoder RS256 com as chaves do JWKS do provedor (Keycloak, Auth0...). O JWKS so e buscado na primeira
+     * validacao (nada de rede na inicializacao) e fica em cache.
      */
     @Bean
     ReactiveJwtDecoder jwtDecoder(AuthPropriedades propriedades) {

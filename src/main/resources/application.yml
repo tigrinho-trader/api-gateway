@@ -52,14 +52,15 @@ spring:
           filters:
             - StripPrefix=1
 
-# Auth0 + checagem de conta (ver AuthPropriedades)
+# Login OpenID Connect + checagem de conta (ver AuthPropriedades).
+# Padrao: Keycloak local (docker-compose, porta 8180). Para o Auth0, defina AUTH_ISSUER, AUTH_JWKS_URI e
+# AUTH_AUDIENCE (ver README).
 tigrinho:
   auth:
-    dominio: ${AUTH0_DOMAIN:tigrinho-trader.us.auth0.com}
-    audiencia: ${AUTH0_AUDIENCE:https://api.tigrinho-trader}
-    emissor: ${AUTH0_ISSUER:https://${tigrinho.auth.dominio}/}
-    jwks-uri: ${AUTH0_JWKS_URI:https://${tigrinho.auth.dominio}/.well-known/jwks.json}
-    namespace-claims: ${AUTH0_CLAIMS_NAMESPACE:https://tigrinho-trader/}
+    emissor: ${AUTH_ISSUER:http://localhost:8180/realms/tigrinho}
+    jwks-uri: ${AUTH_JWKS_URI:${tigrinho.auth.emissor}/protocol/openid-connect/certs}
+    audiencia: ${AUTH_AUDIENCE:tigrinho-api}
+    namespace-claims: ${AUTH_CLAIMS_NAMESPACE:https://tigrinho-trader/}
     usuarios-url: ${USER_URL:http://localhost:8085}
     cache-status: ${AUTH_STATUS_CACHE:30s}
     timeout-status: ${AUTH_STATUS_TIMEOUT:2s}
