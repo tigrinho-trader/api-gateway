@@ -146,12 +146,13 @@ services:
     build:
       context: ../frontend
       # o Vite embute essas variaveis no build (o Dockerfile do frontend declara os ARGs).
-      # Vazias = Keycloak local (padroes do frontend); para o Auth0 veja o README.
+      # Os padroes apontam para o Keycloak local. Atencao: um build arg vazio SOBRESCREVE o padrao do
+      # Dockerfile, por isso authority e client id tem padrao aqui tambem. Para o Auth0 veja o README.
       args:
-        VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:-}
-        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-}
+        VITE_OIDC_AUTHORITY: ${VITE_OIDC_AUTHORITY:-http://localhost:8180/realms/tigrinho}
+        VITE_OIDC_CLIENT_ID: ${VITE_OIDC_CLIENT_ID:-flecha-certeira}
         VITE_OIDC_AUDIENCE: ${VITE_OIDC_AUDIENCE:-}
-        VITE_OIDC_PROVEDOR: ${VITE_OIDC_PROVEDOR:-}
+        VITE_OIDC_PROVEDOR: ${VITE_OIDC_PROVEDOR:-keycloak}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     environment:
