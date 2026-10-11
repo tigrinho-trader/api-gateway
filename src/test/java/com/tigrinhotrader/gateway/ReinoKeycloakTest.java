@@ -115,6 +115,18 @@ class ReinoKeycloakTest {
                 .contains("loginAccountTitle=Entrar no jogo");
     }
 
+    @Test
+    void loginSocialConfiguradoPeloScriptSoComCredenciais() throws IOException {
+        String script = Files.readString(Path.of("infra", "keycloak", "configurar-reino.sh"));
+        assertThat(script).contains("configurar google google")
+                .contains("configurar microsoft microsoft")
+                .contains("GOOGLE_CLIENT_ID").contains("MICROSOFT_CLIENT_SECRET")
+                .contains("trustEmail=true")
+                .contains("sem credenciais no .env");
+        // o script roda em Linux: CRLF quebraria o bash
+        assertThat(script).doesNotContain("\r");
+    }
+
     private static JsonNode clienteDoJogo() {
         for (JsonNode c : reino.path("clients")) {
             if ("flecha-certeira".equals(c.path("clientId").asText())) {

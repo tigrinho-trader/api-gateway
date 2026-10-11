@@ -246,3 +246,25 @@ provedor (par de chaves RSA gerado no proprio teste, tokens no formato do Keyclo
 - [notification-service](https://github.com/tigrinho-trader/notification-service)
 - [frontend](https://github.com/tigrinho-trader/frontend)
 - [docs-arquitetura](https://github.com/tigrinho-trader/docs-arquitetura)
+
+### Entrar com Google e Microsoft
+
+O servico `keycloak-config` (roda a cada `docker compose up`) liga os botoes "Entrar com Google" e "Entrar com
+Microsoft" quando as credenciais estao no `.env` (ignorado pelo git) ao lado deste arquivo:
+
+```
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
+MICROSOFT_CLIENT_ID=...
+MICROSOFT_CLIENT_SECRET=...
+```
+
+URIs de redirecionamento para cadastrar nos consoles:
+
+- Google: `http://localhost:8180/realms/tigrinho/broker/google/endpoint`
+- Microsoft: `http://localhost:8180/realms/tigrinho/broker/microsoft/endpoint`
+
+Passo a passo completo em `docs-arquitetura/AUTENTICACAO.md`. Depois de editar o `.env`: `docker compose up -d keycloak-config`.
+
+As contas do Keycloak ficam no volume `keycloak-dados` (sobrevivem a reinicios). Reino ja existente nao e
+reimportado: ajustes de tema/nome sao reaplicados pelo `keycloak-config`.

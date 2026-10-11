@@ -68,6 +68,8 @@ services:
       - ./infra/keycloak/tigrinho-realm.json:/opt/keycloak/data/import/tigrinho-realm.json:ro
       # tema de login com a cara do jogo (start-dev nao faz cache: editar o CSS vale na hora)
       - ./infra/keycloak/themes/flecha-certeira:/opt/keycloak/themes/flecha-certeira:ro
+      # contas criadas no jogo sobrevivem a reinicios (H2 do modo dev)
+      - keycloak-dados:/opt/keycloak/data/h2
     healthcheck:
       # a imagem nao tem curl: usa o /dev/tcp do bash no /health/ready da porta de gerenciamento (9000)
       test:
@@ -78,6 +80,25 @@ services:
       interval: 10s
       start_period: 30s
       retries: 30
+
+  # Roda uma vez a cada "up": tema/nome do reino e login com Google/Microsoft (so com credenciais no .env)
+  keycloak-config:
+    image: quay.io/keycloak/keycloak:26.0.7
+    entrypoint: ["/bin/bash", "/opt/keycloak/configurar-reino.sh"]
+    environment:
+      KC_URL: http://keycloak:8080
+      KC_ADMIN: admin
+      KC_ADMIN_SENHA: admin
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
+    volumes:
+      - ./infra/keycloak/configurar-reino.sh:/opt/keycloak/configurar-reino.sh:ro
+    depends_on:
+      keycloak: { condition: service_healthy }
+    restart: "no"
 
   market-data-service:
     build: ../market-data-service
@@ -166,3 +187,4 @@ services:
 
 volumes:
   pgdata:
+  keycloak-dados:
