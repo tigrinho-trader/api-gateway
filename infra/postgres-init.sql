@@ -2,3 +2,4 @@
 CREATE DATABASE trading;
 CREATE DATABASE wallet;
 CREATE DATABASE notification;
+CREATE DATABASE usuarios;

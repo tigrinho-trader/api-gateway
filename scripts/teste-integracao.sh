@@ -5,14 +5,21 @@
 #   trading -> wallet e market-data (REST)
 #   market-data -> trading (preco.atualizado) e trading -> wallet (ordem.executada) via RabbitMQ
 #
-#   ./scripts/teste-integracao.sh
-#   GATEWAY_URL=http://localhost:8090 ./scripts/teste-integracao.sh
+# Desde a Etapa 3 o gateway exige um access token do Auth0 (o X-Usuario-Id vindo do cliente e descartado).
+# Pegue um token do usuario de teste (ex.: no frontend logado, ou pelo painel do Auth0 em
+# APIs > Test) e passe em TOKEN:
+#
+#   TOKEN=eyJ... ./scripts/teste-integracao.sh
+#   TOKEN=eyJ... GATEWAY_URL=http://localhost:8090 ./scripts/teste-integracao.sh
 #
 # Sai com codigo 1 se alguma verificacao falhar.
 
 GW=${GATEWAY_URL:-http://localhost:8080}
 RABBIT=${RABBIT_URL:-http://localhost:15672}
-USUARIO="teste-integracao-$(date +%s)"
+if [ -z "$TOKEN" ]; then
+  echo "Defina TOKEN com um access token do Auth0: TOKEN=eyJ... $0"
+  exit 1
+fi
 PY=$(command -v python3 || command -v python)
 FALHAS=0
 
@@ -23,13 +30,21 @@ json()  { "$PY" -c "import sys,json; d=json.load(sys.stdin); print($1)" 2>/dev/n
 # requisicao METODO CAMINHO [CORPO] -> preenche $STATUS e $CORPO
 requisicao() {
   local saida
-  saida=$(curl -s -w '\n%{http_code}' -X "$1" -H "X-Usuario-Id: $USUARIO" \
+  saida=$(curl -s -w '\n%{http_code}' -X "$1" -H "Authorization: Bearer $TOKEN" \
     -H 'Content-Type: application/json' ${3:+-d "$3"} "$GW$2")
   STATUS=${saida##*$'\n'}
   CORPO=${saida%$'\n'*}
 }
 
-echo "Gateway: $GW | usuario: $USUARIO"
+echo "Gateway: $GW | usuario: o dono do TOKEN"
+
+echo "0. Gateway exige token nas rotas protegidas"
+SEM_TOKEN=$(curl -s -o /dev/null -w '%{http_code}' "$GW/api/carteira")
+if [ "$SEM_TOKEN" = 401 ]; then
+  ok "GET /api/carteira sem token devolveu 401"
+else
+  falha "GET /api/carteira sem token devolveu $SEM_TOKEN (esperava 401)"
+fi
 
 echo "1. Gateway -> market-data-service"
 for _ in $(seq 1 30); do

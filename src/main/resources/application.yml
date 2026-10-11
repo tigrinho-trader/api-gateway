@@ -10,10 +10,23 @@ spring:
         cors-configurations:
           '[/**]':
             allowed-origins: ${FRONTEND_ORIGINS:http://localhost:5173}
-            allowed-methods: GET,POST,PUT,DELETE,OPTIONS
-            allowed-headers: '*'
-      # /api/<recurso>/** -> servico dono do recurso, sem o prefixo /api
+            allowed-methods: GET,POST,PUT,PATCH,DELETE,OPTIONS
+            allowed-headers: '*' # inclui Authorization
+      # /api/<recurso>/** -> servico dono do recurso, sem o prefixo /api.
+      # Quem e publico e quem exige JWT fica em SegurancaConfig.
       routes:
+        - id: usuarios
+          uri: ${USER_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/usuarios,/api/usuarios/**
+          filters:
+            - StripPrefix=1
+        - id: jogos
+          uri: ${TRADING_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/jogos/**
+          filters:
+            - StripPrefix=1
         - id: trading
           uri: ${TRADING_URL:http://localhost:8081}
           predicates:
@@ -38,6 +51,18 @@ spring:
             - Path=/api/notificacoes,/api/notificacoes/**
           filters:
             - StripPrefix=1
+
+# Auth0 + checagem de conta (ver AuthPropriedades)
+tigrinho:
+  auth:
+    dominio: ${AUTH0_DOMAIN:tigrinho-trader.us.auth0.com}
+    audiencia: ${AUTH0_AUDIENCE:https://api.tigrinho-trader}
+    emissor: ${AUTH0_ISSUER:https://${tigrinho.auth.dominio}/}
+    jwks-uri: ${AUTH0_JWKS_URI:https://${tigrinho.auth.dominio}/.well-known/jwks.json}
+    namespace-claims: ${AUTH0_CLAIMS_NAMESPACE:https://tigrinho-trader/}
+    usuarios-url: ${USER_URL:http://localhost:8085}
+    cache-status: ${AUTH_STATUS_CACHE:30s}
+    timeout-status: ${AUTH_STATUS_TIMEOUT:2s}
 
 management:
   endpoints:

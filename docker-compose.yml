@@ -1,6 +1,9 @@
 # Sobe a aplicacao inteira localmente. Espera os repos lado a lado:
 #   tigrinho-trader/
-#     api-gateway/  (este)   trading-service/   wallet-service/   market-data-service/   frontend/
+#     api-gateway/  (este)   trading-service/   wallet-service/   market-data-service/   user-service/   frontend/
+#
+# Login pelo Auth0: exporte AUTH0_DOMAIN, AUTH0_AUDIENCE e AUTH0_CLIENT_ID (SPA) antes de subir
+# (ou ponha num arquivo .env ao lado deste). ADMIN_EMAILS=email1,email2 vira ADMIN no primeiro login.
 #
 #   docker compose up --build
 #   http://localhost:3000             # o jogo
@@ -63,6 +66,14 @@ services:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
 
+  user-service:
+    build: ../user-service
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/usuarios
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+    depends_on:
+      postgres: { condition: service_healthy }
+
   trading-service:
     build: ../trading-service
     environment:
@@ -83,13 +94,24 @@ services:
       WALLET_URL: http://wallet-service:8082
       MARKET_DATA_URL: http://market-data-service:8083
       NOTIFICATION_URL: http://notification-service:8084
+      USER_URL: http://user-service:8085
+      AUTH0_DOMAIN: ${AUTH0_DOMAIN:-tigrinho-trader.us.auth0.com}
+      AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://api.tigrinho-trader}
+      AUTH0_CLAIMS_NAMESPACE: ${AUTH0_CLAIMS_NAMESPACE:-https://tigrinho-trader/}
     depends_on:
+      - user-service
       - trading-service
       - wallet-service
       - market-data-service
 
   frontend:
-    build: ../frontend
+    build:
+      context: ../frontend
+      # o Vite embute essas variaveis no build (o Dockerfile do frontend declara os ARGs)
+      args:
+        VITE_AUTH0_DOMAIN: ${AUTH0_DOMAIN:-tigrinho-trader.us.auth0.com}
+        VITE_AUTH0_CLIENT_ID: ${AUTH0_CLIENT_ID:-}
+        VITE_AUTH0_AUDIENCE: ${AUTH0_AUDIENCE:-https://api.tigrinho-trader}
     ports:
       - "${FRONTEND_PORT:-3000}:80"
     environment:
