@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -98,6 +99,20 @@ class ReinoKeycloakTest {
         assertThat(senha.path("type").asText()).isEqualTo("password");
         assertThat(senha.path("value").asText()).isEqualTo("admin123");
         assertThat(senha.path("temporary").asBoolean(true)).isFalse();
+    }
+
+    @Test
+    void telasDeLoginComOTemaDoJogo() throws IOException {
+        assertThat(reino.path("loginTheme").asText()).isEqualTo("flecha-certeira");
+        assertThat(reino.path("displayName").asText()).isEqualTo("Flecha Certeira");
+
+        Path tema = Path.of("infra", "keycloak", "themes", "flecha-certeira", "login");
+        String propriedades = Files.readString(tema.resolve("theme.properties"));
+        assertThat(propriedades).contains("parent=keycloak.v2").contains("css/styles.css css/flecha.css");
+        assertThat(tema.resolve("resources/css/flecha.css")).exists();
+        assertThat(Files.readString(tema.resolve("resources/img/cenario.svg"))).startsWith("<svg");
+        assertThat(Files.readString(tema.resolve("messages/messages_pt_BR.properties")))
+                .contains("loginAccountTitle=Entrar no jogo");
     }
 
     private static JsonNode clienteDoJogo() {

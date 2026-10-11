@@ -1,0 +1,183 @@
+/* Login do Flecha Certeira: o visual do jogo por cima do tema keycloak.v2 (PatternFly 5). */
+@import url('https://fonts.googleapis.com/css2?family=Lilita+One&family=Nunito:wght@600;700;800;900&display=swap');
+
+:root {
+  --fc-madeira: #8b5a2b;
+  --fc-madeira-escura: #5e3b1a;
+  --fc-creme: #fff4dc;
+  --fc-texto: #4a2f17;
+  --fc-vermelho: #e53935;
+  --fc-vermelho-escuro: #7a1a12;
+  --fc-verde: #43a047;
+  --fc-verde-escuro: #1b5e20;
+  --fc-borda-campo: #c9a77c;
+  --pf-v5-global--FontFamily--text: 'Nunito', system-ui, sans-serif;
+  --pf-v5-global--FontFamily--heading: 'Lilita One', 'Nunito', sans-serif;
+}
+
+/* Fundo: o cenario do Campo do Vilarejo */
+body#keycloak-bg,
+html.login-pf body {
+  background: #4fb8ec url(../img/cenario.svg) center bottom / cover no-repeat fixed !important;
+  font-family: 'Nunito', system-ui, sans-serif;
+  color: var(--fc-texto);
+}
+.pf-v5-c-login,
+.pf-v5-c-login__container {
+  background: transparent !important;
+}
+.pf-v5-c-login__container {
+  padding-top: 24px;
+}
+
+/* Nome do jogo no topo */
+#kc-header,
+.pf-v5-c-login__header {
+  justify-content: center;
+  text-align: center;
+}
+#kc-header-wrapper {
+  font-family: 'Lilita One', 'Nunito', sans-serif !important;
+  font-size: clamp(40px, 6vw, 64px);
+  line-height: 1.05;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: #ffeb3b;
+  text-shadow:
+    0 4px 0 var(--fc-vermelho-escuro),
+    3px 0 0 var(--fc-vermelho-escuro), -3px 0 0 var(--fc-vermelho-escuro),
+    0 -3px 0 var(--fc-vermelho-escuro), 0 8px 18px rgba(0, 0, 0, 0.35);
+}
+
+/* Card de madeira */
+main.pf-v5-c-login__main,
+.pf-v5-c-login__main {
+  background: var(--fc-creme) !important;
+  border: 6px solid var(--fc-madeira);
+  border-radius: 26px;
+  box-shadow: 0 10px 0 var(--fc-madeira-escura), 0 20px 40px rgba(0, 0, 0, 0.4);
+  overflow: hidden;
+  animation: fc-pop 0.35s cubic-bezier(.2, 1.4, .4, 1);
+}
+@keyframes fc-pop {
+  from { transform: scale(0.85); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+#kc-page-title,
+.pf-v5-c-login__main-header .pf-v5-c-title {
+  font-family: 'Lilita One', 'Nunito', sans-serif !important;
+  font-weight: 400;
+  font-size: 34px;
+  color: var(--fc-vermelho);
+  text-shadow: 0 3px 0 var(--fc-vermelho-escuro);
+}
+
+/* Rotulos e campos */
+.pf-v5-c-form__label,
+.pf-v5-c-form__label-text,
+label {
+  color: var(--fc-texto);
+  font-weight: 800;
+}
+.pf-v5-c-form-control {
+  --pf-v5-c-form-control--before--BorderColor: transparent;
+  --pf-v5-c-form-control--after--BorderColor: transparent;
+  --pf-v5-c-form-control--hover--after--BorderBottomColor: transparent;
+  background: #fff;
+  border: 3px solid var(--fc-borda-campo);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.pf-v5-c-form-control::before,
+.pf-v5-c-form-control::after {
+  border: 0 !important;
+}
+.pf-v5-c-form-control:focus-within {
+  border-color: #8bc34a;
+  box-shadow: 0 0 0 3px rgba(139, 195, 74, 0.35);
+}
+.pf-v5-c-form-control > input,
+.pf-v5-c-form-control > select {
+  font-family: 'Nunito', system-ui, sans-serif;
+  font-weight: 700;
+  color: var(--fc-texto);
+}
+.pf-v5-c-input-group .pf-v5-c-button.pf-m-control {
+  border-radius: 12px;
+}
+
+/* Botao principal: verde "de apertar", igual ao do jogo */
+.pf-v5-c-button.pf-m-primary {
+  --pf-v5-c-button--after--BorderWidth: 0;
+  font-family: 'Lilita One', 'Nunito', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.02em;
+  color: #fff;
+  background: var(--fc-verde);
+  border: 4px solid var(--fc-verde-escuro);
+  border-radius: 18px;
+  box-shadow: 0 6px 0 var(--fc-verde-escuro);
+  text-shadow: 0 2px 0 var(--fc-verde-escuro);
+  padding: 10px 20px;
+  transition: transform 0.08s, filter 0.15s;
+}
+.pf-v5-c-button.pf-m-primary:hover {
+  filter: brightness(1.1);
+  background: var(--fc-verde);
+}
+.pf-v5-c-button.pf-m-primary:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 var(--fc-verde-escuro);
+}
+.pf-v5-c-button.pf-m-secondary {
+  --pf-v5-c-button--after--BorderWidth: 0;
+  font-family: 'Lilita One', 'Nunito', sans-serif;
+  font-size: 18px;
+  color: #fff;
+  background: #8d6e63;
+  border: 4px solid #4e342e;
+  border-radius: 18px;
+  box-shadow: 0 5px 0 #4e342e;
+}
+
+/* Links ("Cadastre-se", "Esqueceu a senha?", "Voltar") */
+.pf-v5-c-login__main a,
+#kc-info a,
+.pf-v5-c-login__main-footer a {
+  color: #c62828;
+  font-weight: 900;
+}
+.pf-v5-c-login__main a:hover {
+  color: var(--fc-vermelho-escuro);
+}
+#kc-info,
+.pf-v5-c-login__main-footer {
+  background: transparent;
+  color: var(--fc-texto);
+  font-weight: 700;
+}
+
+/* Seletor de idioma */
+.pf-v5-c-login__main-header-utilities .pf-v5-c-form-control {
+  border-width: 2px;
+  border-radius: 10px;
+}
+
+/* Avisos de erro do Keycloak (senha errada, campo invalido...) */
+.pf-v5-c-alert {
+  border-radius: 12px;
+  font-weight: 700;
+}
+.pf-v5-c-helper-text__item-text,
+.kc-feedback-text {
+  font-weight: 700;
+}
+
+/* Celular: card ocupa a largura com uma margem */
+@media (max-width: 600px) {
+  main.pf-v5-c-login__main {
+    margin: 0 12px;
+    border-width: 4px;
+  }
+}

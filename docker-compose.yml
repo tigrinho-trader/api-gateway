@@ -65,7 +65,9 @@ services:
     ports:
       - "8180:8080"
     volumes:
-      - ./infra/keycloak:/opt/keycloak/data/import:ro
+      - ./infra/keycloak/tigrinho-realm.json:/opt/keycloak/data/import/tigrinho-realm.json:ro
+      # tema de login com a cara do jogo (start-dev nao faz cache: editar o CSS vale na hora)
+      - ./infra/keycloak/themes/flecha-certeira:/opt/keycloak/themes/flecha-certeira:ro
     healthcheck:
       # a imagem nao tem curl: usa o /dev/tcp do bash no /health/ready da porta de gerenciamento (9000)
       test:

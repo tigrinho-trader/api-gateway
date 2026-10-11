@@ -1,6 +1,6 @@
 {
   "realm": "tigrinho",
-  "displayName": "Tigrinho Trader",
+  "displayName": "Flecha Certeira",
   "enabled": true,
   "sslRequired": "none",
   "registrationAllowed": true,
@@ -13,7 +13,10 @@
   "editUsernameAllowed": false,
   "bruteForceProtected": false,
   "internationalizationEnabled": true,
-  "supportedLocales": ["pt-BR", "en"],
+  "supportedLocales": [
+    "pt-BR",
+    "en"
+  ],
   "defaultLocale": "pt-BR",
   "clients": [
     {
@@ -65,8 +68,20 @@
           }
         }
       ],
-      "defaultClientScopes": ["web-origins", "acr", "profile", "roles", "basic", "email"],
-      "optionalClientScopes": ["address", "phone", "offline_access", "microprofile-jwt"]
+      "defaultClientScopes": [
+        "web-origins",
+        "acr",
+        "profile",
+        "roles",
+        "basic",
+        "email"
+      ],
+      "optionalClientScopes": [
+        "address",
+        "phone",
+        "offline_access",
+        "microprofile-jwt"
+      ]
     }
   ],
   "users": [
@@ -84,7 +99,11 @@
           "temporary": false
         }
       ],
-      "realmRoles": ["default-roles-tigrinho"]
+      "realmRoles": [
+        "default-roles-tigrinho"
+      ]
     }
-  ]
+  ],
+  "displayNameHtml": "Flecha Certeira",
+  "loginTheme": "flecha-certeira"
 }

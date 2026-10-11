@@ -7,6 +7,13 @@ Parte do projeto **Tigrinho Trader** (disciplina Projeto de Software).
 Porta de entrada unica da aplicacao (Spring Cloud Gateway). Valida o token JWT emitido pelo provedor OpenID Connect
 (por padrao um Keycloak local; Auth0 ou outro so por configuracao) antes de rotear a chamada pro servico correto e repassa a identidade do usuario aos servicos. E o unico ponto que o frontend enxerga; nenhum servico interno e exposto direto.
 
+
+### Tela de login com a cara do jogo
+
+O reino usa o tema `flecha-certeira` (`infra/keycloak/themes/flecha-certeira/login`): herda o `keycloak.v2` e troca
+so o visual (cenario do Vilarejo de fundo, card de madeira, fontes e botoes do jogo, textos como "Entrar no jogo").
+O Keycloak em `start-dev` nao faz cache de tema: editar o `flecha.css` ou os textos vale ao recarregar a pagina.
+
 ## Como interage com os outros servicos
 
 - Roteia (sincrono, REST) para user-service, trading-service, wallet-service, market-data-service e notification-service.
