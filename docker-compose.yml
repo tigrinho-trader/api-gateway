@@ -133,6 +133,8 @@ services:
       AUTH_ISSUER: ${AUTH_ISSUER:-http://localhost:8180/realms/tigrinho}
       AUTH_JWKS_URI: ${AUTH_JWKS_URI:-http://keycloak:8080/realms/tigrinho/protocol/openid-connect/certs}
       AUTH_AUDIENCE: ${AUTH_AUDIENCE:-tigrinho-api}
+      # primeira chamada ao user-service recem-ligado pode passar de 2s numa maquina carregada
+      AUTH_STATUS_TIMEOUT: ${AUTH_STATUS_TIMEOUT:-5s}
       AUTH_CLAIMS_NAMESPACE: ${AUTH_CLAIMS_NAMESPACE:-https://tigrinho-trader/}
     depends_on:
       # o JWKS so e buscado no primeiro token: o gateway nao precisa esperar o Keycloak ficar pronto
