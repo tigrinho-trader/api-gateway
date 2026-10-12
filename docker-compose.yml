@@ -107,6 +107,8 @@ services:
       RABBITMQ_HOST: rabbitmq
       BINANCE_ENABLED: ${BINANCE:-true}
       SIMULADOR_ENABLED: ${SIMULADOR:-false}
+      # USDTBRL: cambio para converter os reais do estudo da flecha bitcoin em USDT
+      MARKET_DATA_SIMBOLOS: ${MARKET_DATA_SIMBOLOS:-BTCUSDT,ETHUSDT,SOLUSDT,USDTBRL}
     depends_on:
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -138,6 +140,16 @@ services:
       RABBITMQ_HOST: rabbitmq
       MARKET_DATA_URL: http://market-data-service:8083
       WALLET_URL: http://wallet-service:8082
+      # Estudo da flecha bitcoin. SIMULADO = sem ordens. REAL = dinheiro de verdade na margem isolada BTCUSDT da
+      # Binance (so o dono liga, no .env, junto com BINANCE_API_KEY e BINANCE_API_SECRET).
+      ESTUDO_MODO: ${ESTUDO_MODO:-SIMULADO}
+      ESTUDO_MARGEM_BRL: ${ESTUDO_MARGEM_BRL:-10}
+      ESTUDO_ALAVANCAGEM: ${ESTUDO_ALAVANCAGEM:-3}
+      ESTUDO_MAX_OPERACOES_DIA: ${ESTUDO_MAX_OPERACOES_DIA:-300}
+      ESTUDO_MAX_ABERTAS: ${ESTUDO_MAX_ABERTAS:-5}
+      ESTUDO_PERDA_MAXIMA_DIA_BRL: ${ESTUDO_PERDA_MAXIMA_DIA_BRL:-50}
+      BINANCE_API_KEY: ${BINANCE_API_KEY:-}
+      BINANCE_API_SECRET: ${BINANCE_API_SECRET:-}
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
