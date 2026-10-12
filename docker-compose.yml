@@ -107,8 +107,8 @@ services:
       RABBITMQ_HOST: rabbitmq
       BINANCE_ENABLED: ${BINANCE:-true}
       SIMULADOR_ENABLED: ${SIMULADOR:-false}
-      # USDTBRL: cambio para converter os reais do estudo da flecha bitcoin em USDT
-      MARKET_DATA_SIMBOLOS: ${MARKET_DATA_SIMBOLOS:-BTCUSDT,ETHUSDT,SOLUSDT,USDTBRL}
+      # USDTBRL: cambio do estudo; PAXGUSDT: ouro (passaro e flecha de mercado do jogo)
+      MARKET_DATA_SIMBOLOS: ${MARKET_DATA_SIMBOLOS:-BTCUSDT,ETHUSDT,SOLUSDT,USDTBRL,PAXGUSDT}
     depends_on:
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
