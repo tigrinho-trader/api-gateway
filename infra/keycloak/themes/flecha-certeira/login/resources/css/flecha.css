@@ -26,8 +26,16 @@ html.login-pf body {
 .pf-v5-c-login__container {
   background: transparent !important;
 }
+/* Titulo + card centralizados na altura da janela (o PatternFly empurra tudo para baixo) */
 .pf-v5-c-login__container {
-  padding-top: 24px;
+  padding-top: 0 !important;
+}
+.pf-v5-c-login__header {
+  margin-top: 0 !important;
+  margin-bottom: 12px;
+}
+.pf-v5-c-login__main-header {
+  padding-top: 28px !important;
 }
 
 /* Nome do jogo no topo */
