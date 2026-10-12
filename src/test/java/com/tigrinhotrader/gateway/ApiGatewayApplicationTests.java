@@ -325,6 +325,22 @@ class ApiGatewayApplicationTests {
     }
 
     @Test
+    void cookiesGrandesDeOutrosSitesEmLocalhostNaoDerrubamAApi() {
+        // em localhost o navegador manda os cookies de todos os projetos locais (cookie nao separa porta)
+        String cookieGrande = "outro_projeto=" + "x".repeat(20_000);
+        cliente.get().uri("/api/carteira").headers(h -> h.setBearerAuth(token("auth0|ana")))
+                .header(HttpHeaders.COOKIE, cookieGrande)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().doesNotExist("Eco-Cookie")
+                .expectBody(String.class).isEqualTo("wallet:/carteira:auth0|ana");
+        cliente.get().uri("/api/jogos/flecha/regras").header(HttpHeaders.COOKIE, cookieGrande)
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().doesNotExist("Eco-Cookie");
+    }
+
+    @Test
     void rotaPublicaIgnoraOToken() {
         // token valido: nao propaga identidade (rota publica nao precisa)
         cliente.get().uri("/api/jogos/flecha/regras").headers(h -> h.setBearerAuth(token("auth0|ana")))
@@ -652,6 +668,9 @@ class ApiGatewayApplicationTests {
                 if (valores != null) {
                     troca.getResponseHeaders().set("Eco-" + campo, String.join(",", valores));
                 }
+            }
+            if (recebidos.containsKey("Cookie")) {
+                troca.getResponseHeaders().set("Eco-Cookie", "recebido");
             }
             responder(troca, 200, nome + ":" + troca.getRequestURI() + ":" + usuario);
         };

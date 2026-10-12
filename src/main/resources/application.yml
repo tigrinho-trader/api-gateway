@@ -1,11 +1,16 @@
 server:
   port: 8080
+  # cookies de outros sites em localhost + token passam facil de 8 KB (o padrao); acima disso: 431
+  max-http-request-header-size: 32KB
 
 spring:
   application:
     name: api-gateway
   cloud:
     gateway:
+      # a API e autenticada por token Bearer: cookies nao vao para os servicos
+      default-filters:
+        - RemoveRequestHeader=Cookie
       globalcors:
         cors-configurations:
           '[/**]':
