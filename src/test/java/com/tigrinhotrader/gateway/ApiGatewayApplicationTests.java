@@ -38,6 +38,9 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.web.reactive.server.WebTestClientBuilderCustomizer;
+import org.springframework.context.annotation.Bean;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.HttpHeaders;
@@ -84,6 +87,19 @@ class ApiGatewayApplicationTests {
     @Autowired
     private WebTestClient cliente;
 
+    /** Folga para a maquina carregada (o padrao do WebTestClient e 5 s). */
+    @TestConfiguration
+    static class EsperaMaior {
+        @Bean
+        WebTestClientBuilderCustomizer esperaDe15Segundos() {
+            return builder -> builder.responseTimeout(java.time.Duration.ofSeconds(15));
+        }
+    }
+
+    /** HttpClient que o Spring Cloud Gateway usa para repassar as rotas. */
+    @Autowired
+    private reactor.netty.http.client.HttpClient httpClientDasRotas;
+
     @LocalServerPort
     private int porta;
 
@@ -97,7 +113,8 @@ class ApiGatewayApplicationTests {
         registro.add("AUTH_JWKS_URI", () -> url(JWKS) + "/realms/tigrinho-teste/protocol/openid-connect/certs");
         registro.add("AUTH_ISSUER", () -> EMISSOR);
         registro.add("AUTH_AUDIENCE", () -> AUDIENCIA);
-        registro.add("AUTH_STATUS_TIMEOUT", () -> "500ms");
+        // folga para a maquina carregada; o "lento" do user-service falso dorme bem mais que isso
+        registro.add("AUTH_STATUS_TIMEOUT", () -> "2s");
     }
 
     @AfterAll
@@ -691,7 +708,7 @@ class ApiGatewayApplicationTests {
             case "auth0|falha", "auth0|falha-repetida" -> responder(troca, 500, "{\"title\":\"erro\"}");
             case "auth0|sem-status" -> responder(troca, 200, "{}");
             case "auth0|lento" -> {
-                dormir(1500);
+                dormir(4000);
                 responder(troca, 200, "{\"status\":\"ATIVO\"}");
             }
             default -> responder(troca, 200, "{\"status\":\"ATIVO\"}");
@@ -711,5 +728,11 @@ class ApiGatewayApplicationTests {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
+    }
+
+    @Test
+    void rotasUsamCacheDnsCurtoParaAcharContainersRecriados() {
+        assertThat(httpClientDasRotas.configuration().resolver())
+                .isSameAs(io.netty.resolver.DefaultAddressResolverGroup.INSTANCE);
     }
 }
