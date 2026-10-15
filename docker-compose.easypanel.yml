@@ -1,0 +1,214 @@
+# Flecha Certeira em producao no EasyPanel: um servico do tipo "Compose" sobe os 10 containers.
+#
+# No EasyPanel:
+#   1. Projeto novo > + Service > Compose > Source: Git
+#        Repository URL: https://github.com/tigrinho-trader/api-gateway.git   Branch: etapa-3-auth0
+#        Docker Compose File: docker-compose.easypanel.yml
+#   2. Environment: as variaveis abaixo (modelo em .env.easypanel.example).
+#   3. Domains: dois enderecos HTTPS (o *.easypanel.host gratuito serve):
+#        JOGO_URL  -> servico "frontend", porta 80
+#        LOGIN_URL -> servico "keycloak", porta 8080
+#   4. Deploy. O primeiro leva uns 10-15 min (compila os 6 servicos a partir do GitHub).
+#
+# Diferencas para o docker-compose.yml local:
+#   - nenhuma porta publicada: so o frontend e o keycloak sao alcancados, pelos dominios do EasyPanel;
+#   - o codigo de cada servico vem do GitHub (branch etapa-3-auth0), nao das pastas lado a lado;
+#   - Keycloak em modo de producao (start), com banco no Postgres, atras do HTTPS do EasyPanel;
+#   - sem o usuario admin/admin123 de desenvolvimento, sem o sandbox da carteira e com senhas obrigatorias;
+#   - memoria limitada por container, para nao disputar a VPS com as outras aplicacoes.
+
+x-java: &java
+  restart: unless-stopped
+  mem_limit: 640m
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    mem_limit: 512m
+    environment:
+      POSTGRES_USER: tigrinho
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?defina POSTGRES_PASSWORD}
+      POSTGRES_DB: tigrinho
+    volumes:
+      # cria os bancos trading, wallet, usuarios e keycloak na primeira subida
+      - ./infra/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tigrinho"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    mem_limit: 128m
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:3.13-management-alpine
+    restart: unless-stopped
+    mem_limit: 384m
+    healthcheck:
+      test: ["CMD", "nc", "-z", "127.0.0.1", "5672"]
+      interval: 10s
+      retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    restart: unless-stopped
+    mem_limit: 1g
+    command: ["start", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: tigrinho
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # o HTTPS termina no proxy do EasyPanel; o Keycloak fala HTTP na rede interna
+      KC_HTTP_ENABLED: "true"
+      KC_PROXY_HEADERS: xforwarded
+      # emissor dos tokens = endereco publico; o gateway busca as chaves por http://keycloak:8080
+      KC_HOSTNAME: ${LOGIN_URL:?defina LOGIN_URL (ex. https://login-xxxx.easypanel.host)}
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?defina KEYCLOAK_ADMIN_PASSWORD}
+      JAVA_OPTS_KC_HEAP: "-Xms256m -Xmx640m"
+    volumes:
+      - ./infra/keycloak/tigrinho-realm.json:/opt/keycloak/data/import/tigrinho-realm.json:ro
+      - ./infra/keycloak/themes/flecha-certeira:/opt/keycloak/themes/flecha-certeira:ro
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - 'exec 3<>/dev/tcp/127.0.0.1/9000 && printf "GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n" >&3 && head -n1 <&3 | grep -q " 200"'
+      interval: 10s
+      start_period: 90s
+      retries: 30
+
+  # Roda a cada deploy: tema, endereco publico no cliente do jogo, HTTPS exigido e remocao do usuario de dev
+  keycloak-config:
+    image: quay.io/keycloak/keycloak:26.0.7
+    entrypoint: ["/bin/bash", "/opt/keycloak/configurar-reino.sh"]
+    environment:
+      KC_URL: http://keycloak:8080
+      KC_ADMIN: admin
+      KC_ADMIN_SENHA: ${KEYCLOAK_ADMIN_PASSWORD}
+      JOGO_URL: ${JOGO_URL:?defina JOGO_URL (ex. https://jogo-xxxx.easypanel.host)}
+      REMOVER_USUARIO_DEV: "true"
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+      MICROSOFT_TENANT: ${MICROSOFT_TENANT:-common}
+    volumes:
+      - ./infra/keycloak/configurar-reino.sh:/opt/keycloak/configurar-reino.sh:ro
+    depends_on:
+      keycloak: { condition: service_healthy }
+    restart: "no"
+
+  market-data-service:
+    <<: *java
+    build: https://github.com/tigrinho-trader/market-data-service.git#etapa-3-auth0
+    environment:
+      REDIS_HOST: redis
+      RABBITMQ_HOST: rabbitmq
+      BINANCE_ENABLED: "true"
+      SIMULADOR_ENABLED: "false"
+      MARKET_DATA_SIMBOLOS: BTCUSDT,ETHUSDT,SOLUSDT,USDTBRL,PAXGUSDT
+      JAVA_TOOL_OPTIONS: "-Xmx320m"
+    depends_on:
+      redis: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  wallet-service:
+    <<: *java
+    build: https://github.com/tigrinho-trader/wallet-service.git#etapa-3-auth0
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/wallet
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      # Pix (AbacatePay): vazio = compra de moedas desligada
+      ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
+      # o sandbox cria moedas sem pagar: so para desenvolvimento
+      WALLET_SANDBOX_HABILITADO: "false"
+      JAVA_TOOL_OPTIONS: "-Xmx320m"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  user-service:
+    <<: *java
+    build: https://github.com/tigrinho-trader/user-service.git#etapa-3-auth0
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/usuarios
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      # quem nasce ADMIN no primeiro login (cadastre-se com este e-mail logo apos o primeiro deploy)
+      ADMIN_EMAILS: ${ADMIN_EMAILS:-}
+      JAVA_TOOL_OPTIONS: "-Xmx320m"
+    depends_on:
+      postgres: { condition: service_healthy }
+
+  trading-service:
+    <<: *java
+    build: https://github.com/tigrinho-trader/trading-service.git#etapa-3-auth0
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/trading
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      RABBITMQ_HOST: rabbitmq
+      MARKET_DATA_URL: http://market-data-service:8083
+      WALLET_URL: http://wallet-service:8082
+      # SIMULADO = sem ordens na corretora. REAL movimenta dinheiro de verdade: so o dono liga.
+      ESTUDO_MODO: ${ESTUDO_MODO:-SIMULADO}
+      BINANCE_API_KEY: ${BINANCE_API_KEY:-}
+      BINANCE_API_SECRET: ${BINANCE_API_SECRET:-}
+      JAVA_TOOL_OPTIONS: "-Xmx384m"
+    depends_on:
+      postgres: { condition: service_healthy }
+      rabbitmq: { condition: service_healthy }
+
+  api-gateway:
+    <<: *java
+    build: .
+    environment:
+      TRADING_URL: http://trading-service:8081
+      WALLET_URL: http://wallet-service:8082
+      MARKET_DATA_URL: http://market-data-service:8083
+      NOTIFICATION_URL: http://notification-service:8084
+      USER_URL: http://user-service:8085
+      AUTH_ISSUER: ${LOGIN_URL}/realms/tigrinho
+      AUTH_JWKS_URI: http://keycloak:8080/realms/tigrinho/protocol/openid-connect/certs
+      AUTH_AUDIENCE: tigrinho-api
+      AUTH_STATUS_TIMEOUT: 5s
+      JAVA_TOOL_OPTIONS: "-Xmx320m"
+    depends_on:
+      keycloak: { condition: service_started }
+      user-service: { condition: service_started }
+      trading-service: { condition: service_started }
+      wallet-service: { condition: service_started }
+      market-data-service: { condition: service_started }
+
+  frontend:
+    restart: unless-stopped
+    mem_limit: 128m
+    build:
+      context: https://github.com/tigrinho-trader/frontend.git#etapa-3-auth0
+      # o Vite grava o endereco do login no build: mudou LOGIN_URL, faca um novo deploy
+      args:
+        VITE_OIDC_AUTHORITY: ${LOGIN_URL}/realms/tigrinho
+        VITE_OIDC_CLIENT_ID: flecha-certeira
+        VITE_OIDC_AUDIENCE: ""
+        VITE_OIDC_PROVEDOR: keycloak
+    environment:
+      GATEWAY_URL: http://api-gateway:8080
+    depends_on:
+      - api-gateway
+
+volumes:
+  pgdata:

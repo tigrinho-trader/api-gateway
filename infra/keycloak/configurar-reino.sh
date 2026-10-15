@@ -15,6 +15,24 @@ $KCADM update "realms/$REINO" -s loginTheme=flecha-certeira -s 'displayName=Flec
   -s 'displayNameHtml=Flecha Certeira' -s registrationAllowed=true
 echo "reino $REINO: tema e nome conferidos"
 
+# Producao (docker-compose.easypanel.yml): o cliente do jogo aceita so o endereco publico, o reino exige HTTPS
+# para acessos de fora e o usuario de desenvolvimento (admin/admin123) e apagado.
+if [ -n "${JOGO_URL:-}" ]; then
+  CLIENTE=$($KCADM get clients -r "$REINO" -q clientId=flecha-certeira --fields id --format csv --noquotes)
+  $KCADM update "clients/$CLIENTE" -r "$REINO" \
+    -s "redirectUris=[\"$JOGO_URL/*\",\"$JOGO_URL\"]" -s "webOrigins=[\"$JOGO_URL\"]" \
+    -s "attributes.\"post.logout.redirect.uris\"=$JOGO_URL/*"
+  $KCADM update "realms/$REINO" -s sslRequired=external
+  echo "cliente flecha-certeira: so $JOGO_URL"
+fi
+if [ "${REMOVER_USUARIO_DEV:-false}" = "true" ]; then
+  USUARIO_DEV=$($KCADM get users -r "$REINO" -q username=admin -q exact=true --fields id --format csv --noquotes)
+  if [ -n "$USUARIO_DEV" ]; then
+    $KCADM delete "users/$USUARIO_DEV" -r "$REINO"
+    echo "usuario de desenvolvimento removido"
+  fi
+fi
+
 # configurar <alias> <providerId> <nome na tela> <client id> <client secret> [config extra...]
 configurar() {
   local alias=$1 provedor=$2 nome=$3 id=$4 segredo=$5
