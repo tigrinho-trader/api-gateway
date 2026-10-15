@@ -138,6 +138,12 @@ services:
       ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
       # o sandbox cria moedas sem pagar: so para desenvolvimento
       WALLET_SANDBOX_HABILITADO: "false"
+      # Saques: o wallet-service e quem cria a subconta e transfere o BTC.
+      # As chaves tambem precisam chegar aqui, nao apenas no trading-service.
+      BINANCE_SUBCONTAS_HABILITADO: ${BINANCE_SUBCONTAS_HABILITADO:-true}
+      BINANCE_API_KEY: ${BINANCE_API_KEY:-}
+      BINANCE_API_SECRET: ${BINANCE_API_SECRET:-}
+      BINANCE_URL: ${BINANCE_URL:-https://api.binance.com}
       JAVA_TOOL_OPTIONS: "-Xmx320m"
     depends_on:
       postgres: { condition: service_healthy }
