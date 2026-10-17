@@ -141,6 +141,7 @@ services:
       # Saques: o wallet-service e quem cria a subconta e transfere o BTC.
       # As chaves tambem precisam chegar aqui, nao apenas no trading-service.
       BINANCE_SUBCONTAS_HABILITADO: ${BINANCE_SUBCONTAS_HABILITADO:-true}
+      BINANCE_SUBCONTAS_MODO: ${BINANCE_SUBCONTAS_MODO:-STANDARD}
       BINANCE_API_KEY: ${BINANCE_API_KEY:-}
       BINANCE_API_SECRET: ${BINANCE_API_SECRET:-}
       BINANCE_URL: ${BINANCE_URL:-https://api.binance.com}
