@@ -108,7 +108,8 @@ services:
       BINANCE_ENABLED: ${BINANCE:-true}
       SIMULADOR_ENABLED: ${SIMULADOR:-false}
       # USDTBRL: cambio do estudo; PAXGUSDT: ouro (passaro e flecha de mercado do jogo)
-      MARKET_DATA_SIMBOLOS: ${MARKET_DATA_SIMBOLOS:-BTCUSDT,ETHUSDT,SOLUSDT,USDTBRL,PAXGUSDT}
+      MARKET_DATA_SIMBOLOS: ${MARKET_DATA_SIMBOLOS:-BTCUSDT,ETHUSDT,SOLUSDT,USDTBRL,PAXGUSDT,1HZ100V}
+      DERIV_ENABLED: ${DERIV_ENABLED:-true}
     depends_on:
       redis: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
@@ -154,6 +155,11 @@ services:
       ESTUDO_PERDA_MAXIMA_DIA_BRL: ${ESTUDO_PERDA_MAXIMA_DIA_BRL:-50}
       BINANCE_API_KEY: ${BINANCE_API_KEY:-}
       BINANCE_API_SECRET: ${BINANCE_API_SECRET:-}
+      # Deriv V100: token PAT, App ID e modo SIMULADO/REAL. Conta é opcional (auto-selecionada por tipo).
+      DERIV_API_TOKEN: ${DERIV_API_TOKEN:-}
+      DERIV_APP_ID: ${DERIV_APP_ID:-}
+      DERIV_TRADING_MODE: ${DERIV_TRADING_MODE:-SIMULADO}
+      DERIV_ACCOUNT_ID: ${DERIV_ACCOUNT_ID:-}
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
