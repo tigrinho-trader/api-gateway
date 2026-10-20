@@ -158,7 +158,7 @@ services:
       # Deriv V100: token PAT, App ID e modo SIMULADO/REAL. Conta é opcional (auto-selecionada por tipo).
       DERIV_API_TOKEN: ${DERIV_API_TOKEN:-}
       DERIV_APP_ID: ${DERIV_APP_ID:-}
-      DERIV_TRADING_MODE: ${DERIV_TRADING_MODE:-SIMULADO}
+      DERIV_TRADING_MODE: ${DERIV_TRADING_MODE:-DEMO}
       DERIV_ACCOUNT_ID: ${DERIV_ACCOUNT_ID:-}
     depends_on:
       postgres: { condition: service_healthy }
