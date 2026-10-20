@@ -129,6 +129,11 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      start_period: 30s
+      retries: 12
 
   user-service:
     build: ../user-service
@@ -185,7 +190,7 @@ services:
       # o JWKS so e buscado no primeiro token: o gateway nao precisa esperar o Keycloak ficar pronto
       keycloak: { condition: service_started }
       user-service: { condition: service_started }
-      trading-service: { condition: service_started }
+      trading-service: { condition: service_healthy }
       wallet-service: { condition: service_started }
       market-data-service: { condition: service_started }
 
