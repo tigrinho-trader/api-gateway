@@ -122,6 +122,10 @@ services:
       # Pix (AbacatePay): defina no .env ao lado deste arquivo (ignorado pelo git). Vazio = Pix desligado.
       ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
       WALLET_SANDBOX_HABILITADO: ${WALLET_SANDBOX_HABILITADO:-true}
+      # moedas de boas-vindas das contas novas (local: 1000 para testar) e cupom de moedas
+      CARTEIRA_SALDO_INICIAL: ${CARTEIRA_SALDO_INICIAL:-1000}
+      CUPOM_CODIGO: ${CUPOM_CODIGO:-}
+      CUPOM_MOEDAS: ${CUPOM_MOEDAS:-0}
       BINANCE_SUBCONTAS_HABILITADO: ${BINANCE_SUBCONTAS_HABILITADO:-false}
       BINANCE_SUBCONTAS_MODO: ${BINANCE_SUBCONTAS_MODO:-LINK}
       BINANCE_API_KEY: ${BINANCE_API_KEY:-}
@@ -165,6 +169,7 @@ services:
       DERIV_APP_ID: ${DERIV_APP_ID:-}
       DERIV_TRADING_MODE: ${DERIV_TRADING_MODE:-DEMO}
       DERIV_ACCOUNT_ID: ${DERIV_ACCOUNT_ID:-}
+      FLECHA_TAXA_DEVOLUCAO: ${FLECHA_TAXA_DEVOLUCAO:-0.002}
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }

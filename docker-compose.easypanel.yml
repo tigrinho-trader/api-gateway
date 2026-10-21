@@ -139,6 +139,10 @@ services:
       ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
       # o sandbox cria moedas sem pagar: so para desenvolvimento
       WALLET_SANDBOX_HABILITADO: "false"
+      # moedas de quem entra pela primeira vez e cupom de moedas (um uso por conta)
+      CARTEIRA_SALDO_INICIAL: ${CARTEIRA_SALDO_INICIAL:-0}
+      CUPOM_CODIGO: ${CUPOM_CODIGO:-}
+      CUPOM_MOEDAS: ${CUPOM_MOEDAS:-0}
       # Saques: o wallet-service e quem cria a subconta e transfere o BTC.
       # As chaves tambem precisam chegar aqui, nao apenas no trading-service.
       BINANCE_SUBCONTAS_HABILITADO: ${BINANCE_SUBCONTAS_HABILITADO:-true}
@@ -185,6 +189,8 @@ services:
       DERIV_APP_ID: ${DERIV_APP_ID:-}
       DERIV_TRADING_MODE: ${DERIV_TRADING_MODE:-DEMO}
       DERIV_ACCOUNT_ID: ${DERIV_ACCOUNT_ID:-}
+      # desconto ao devolver em moedas as flechas de mercado nao usadas (conversao BRL -> USD -> BRL)
+      FLECHA_TAXA_DEVOLUCAO: ${FLECHA_TAXA_DEVOLUCAO:-0.002}
       JAVA_TOOL_OPTIONS: "-Xmx384m"
     depends_on:
       postgres: { condition: service_healthy }
