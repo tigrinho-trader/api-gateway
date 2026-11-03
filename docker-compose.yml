@@ -133,11 +133,6 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
-    healthcheck:
-      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
-      interval: 10s
-      start_period: 30s
-      retries: 12
 
   user-service:
     build: ../user-service
@@ -173,6 +168,12 @@ services:
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }
+    # o gateway so sobe com o trading saudavel (ele leva ~90 s para ficar pronto)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8081/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      start_period: 45s
+      retries: 12
 
   api-gateway:
     build: .
