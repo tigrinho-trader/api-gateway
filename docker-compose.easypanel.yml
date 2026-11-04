@@ -143,13 +143,16 @@ services:
       ASAAS_CLIENTE_CPF_CNPJ: ${ASAAS_CLIENTE_CPF_CNPJ:-}
       # Repasse automatico Asaas -> Deriv (desligado se faltar alguma chave)
       REPASSE_DERIV_HABILITADO: ${REPASSE_DERIV_HABILITADO:-true}
-      REPASSE_DERIV_MINIMO_REAIS: ${REPASSE_DERIV_MINIMO_REAIS:-30}
+      REPASSE_DERIV_MINIMO_REAIS: ${REPASSE_DERIV_MINIMO_REAIS:-0}
       CARTEIRA_PONTE_CHAVE: ${CARTEIRA_PONTE_CHAVE:-}
       DERIV_USDT_BSC_ADDRESS: ${DERIV_USDT_BSC_ADDRESS:-}
       REPASSE_BINANCE_API_KEY: ${REPASSE_BINANCE_API_KEY:-}
       REPASSE_BINANCE_API_SECRET: ${REPASSE_BINANCE_API_SECRET:-}
       REPASSE_DERIV_TOKEN: ${REPASSE_DERIV_TOKEN:-}
       REPASSE_DERIV_APP_ID: ${REPASSE_DERIV_APP_ID:-}
+      # reserva do repasse: as mesmas chaves das flechas
+      DERIV_API_TOKEN: ${DERIV_API_TOKEN:-}
+      DERIV_APP_ID: ${DERIV_APP_ID:-}
       # o sandbox cria moedas sem pagar: so para desenvolvimento
       WALLET_SANDBOX_HABILITADO: "false"
       # moedas de quem entra pela primeira vez e cupom de moedas (um uso por conta)
