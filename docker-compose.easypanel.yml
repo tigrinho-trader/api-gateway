@@ -141,6 +141,13 @@ services:
       ASAAS_URL: ${ASAAS_URL:-https://api.asaas.com/v3}
       ASAAS_CLIENTE_ID: ${ASAAS_CLIENTE_ID:-}
       ASAAS_CLIENTE_CPF_CNPJ: ${ASAAS_CLIENTE_CPF_CNPJ:-}
+      # Repasse automatico Asaas -> Deriv (desligado se faltar alguma chave)
+      REPASSE_DERIV_HABILITADO: ${REPASSE_DERIV_HABILITADO:-true}
+      REPASSE_DERIV_MINIMO_REAIS: ${REPASSE_DERIV_MINIMO_REAIS:-30}
+      CARTEIRA_PONTE_CHAVE: ${CARTEIRA_PONTE_CHAVE:-}
+      DERIV_USDT_BSC_ADDRESS: ${DERIV_USDT_BSC_ADDRESS:-}
+      DERIV_API_TOKEN: ${DERIV_API_TOKEN:-}
+      DERIV_APP_ID: ${DERIV_APP_ID:-}
       # o sandbox cria moedas sem pagar: so para desenvolvimento
       WALLET_SANDBOX_HABILITADO: "false"
       # moedas de quem entra pela primeira vez e cupom de moedas (um uso por conta)
