@@ -137,6 +137,10 @@ services:
       RABBITMQ_HOST: rabbitmq
       # Pix (AbacatePay): vazio = compra de moedas desligada
       ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_URL: ${ASAAS_URL:-https://api.asaas.com/v3}
+      ASAAS_CLIENTE_ID: ${ASAAS_CLIENTE_ID:-}
+      ASAAS_CLIENTE_CPF_CNPJ: ${ASAAS_CLIENTE_CPF_CNPJ:-}
       # o sandbox cria moedas sem pagar: so para desenvolvimento
       WALLET_SANDBOX_HABILITADO: "false"
       # moedas de quem entra pela primeira vez e cupom de moedas (um uso por conta)

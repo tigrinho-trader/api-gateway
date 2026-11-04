@@ -121,6 +121,10 @@ services:
       RABBITMQ_HOST: rabbitmq
       # Pix (AbacatePay): defina no .env ao lado deste arquivo (ignorado pelo git). Vazio = Pix desligado.
       ABACATEPAY_API_KEY: ${ABACATEPAY_API_KEY:-}
+      ASAAS_API_KEY: ${ASAAS_API_KEY:-}
+      ASAAS_URL: ${ASAAS_URL:-https://api.asaas.com/v3}
+      ASAAS_CLIENTE_ID: ${ASAAS_CLIENTE_ID:-}
+      ASAAS_CLIENTE_CPF_CNPJ: ${ASAAS_CLIENTE_CPF_CNPJ:-}
       WALLET_SANDBOX_HABILITADO: ${WALLET_SANDBOX_HABILITADO:-true}
       # moedas de boas-vindas das contas novas (local: 1000 para testar) e cupom de moedas
       CARTEIRA_SALDO_INICIAL: ${CARTEIRA_SALDO_INICIAL:-1000}
