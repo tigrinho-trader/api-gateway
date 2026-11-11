@@ -150,6 +150,9 @@ services:
       REPASSE_BINANCE_API_SECRET: ${REPASSE_BINANCE_API_SECRET:-}
       REPASSE_DERIV_TOKEN: ${REPASSE_DERIV_TOKEN:-}
       REPASSE_DERIV_APP_ID: ${REPASSE_DERIV_APP_ID:-}
+      # saque Pix do caixa do Asaas: so estas contas (id do login ou e-mail, separados por virgula); vazio = desligado
+      SAQUE_ADMINS: ${SAQUE_ADMINS:-}
+      SAQUE_LIMITE_DIARIO_REAIS: ${SAQUE_LIMITE_DIARIO_REAIS:-1000}
       # reserva do repasse: as mesmas chaves das flechas
       DERIV_API_TOKEN: ${DERIV_API_TOKEN:-}
       DERIV_APP_ID: ${DERIV_APP_ID:-}
