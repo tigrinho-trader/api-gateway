@@ -180,7 +180,7 @@ services:
       DERIV_APP_ID: ${DERIV_APP_ID:-}
       DERIV_TRADING_MODE: ${DERIV_TRADING_MODE:-DEMO}
       DERIV_ACCOUNT_ID: ${DERIV_ACCOUNT_ID:-}
-      FLECHA_TAXA_DEVOLUCAO: ${FLECHA_TAXA_DEVOLUCAO:-0.002}
+      FLECHA_TAXA_DEVOLUCAO: ${FLECHA_TAXA_DEVOLUCAO:-0.01}
     depends_on:
       postgres: { condition: service_healthy }
       rabbitmq: { condition: service_healthy }

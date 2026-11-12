@@ -206,7 +206,7 @@ services:
       DERIV_TRADING_MODE: ${DERIV_TRADING_MODE:-DEMO}
       DERIV_ACCOUNT_ID: ${DERIV_ACCOUNT_ID:-}
       # desconto ao devolver em moedas as flechas de mercado nao usadas (conversao BRL -> USD -> BRL)
-      FLECHA_TAXA_DEVOLUCAO: ${FLECHA_TAXA_DEVOLUCAO:-0.002}
+      FLECHA_TAXA_DEVOLUCAO: ${FLECHA_TAXA_DEVOLUCAO:-0.01}
       JAVA_TOOL_OPTIONS: "-Xmx384m"
     depends_on:
       postgres: { condition: service_healthy }
