@@ -150,8 +150,6 @@ services:
       REPASSE_BINANCE_API_SECRET: ${REPASSE_BINANCE_API_SECRET:-}
       REPASSE_DERIV_TOKEN: ${REPASSE_DERIV_TOKEN:-}
       REPASSE_DERIV_APP_ID: ${REPASSE_DERIV_APP_ID:-}
-      # saque Pix: o wallet-service pergunta ao user-service (rede interna) se a conta e ADMIN
-      USER_URL: http://user-service:8085
       # reserva do repasse: as mesmas chaves das flechas
       DERIV_API_TOKEN: ${DERIV_API_TOKEN:-}
       DERIV_APP_ID: ${DERIV_APP_ID:-}
