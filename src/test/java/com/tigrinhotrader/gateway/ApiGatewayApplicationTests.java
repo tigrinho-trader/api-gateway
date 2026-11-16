@@ -115,6 +115,71 @@ class ApiGatewayApplicationTests {
         registro.add("AUTH_AUDIENCE", () -> AUDIENCIA);
         // folga para a maquina carregada; o "lento" do user-service falso dorme bem mais que isso
         registro.add("AUTH_STATUS_TIMEOUT", () -> "2s");
+        registro.add("PAINEL_SENHA_HASH", () -> com.tigrinhotrader.gateway.painel.SenhaPainelTestes.HASH);
+        registro.add("PAINEL_SEGREDO", () -> "segredo-de-teste-do-painel-com-mais-de-32-caracteres");
+    }
+
+    // ---------- painel do super-admin ----------
+
+    private String loginDoPainel() {
+        return cliente.post().uri("/api/painel/login").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("usuario", "super-admin-oscar", "senha", com.tigrinhotrader.gateway.painel.SenhaPainelTestes.SENHA))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(Map.class).returnResult().getResponseBody().get("token").toString();
+    }
+
+    @Test
+    void painelEntraComUsuarioESenhaERoteiaComOCabecalhoDoPainel() {
+        String token = loginDoPainel();
+        cliente.get().uri("/api/painel/jogo/config").headers(h -> h.setBearerAuth(token))
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().valueEquals("Eco-Painel", "super-admin-oscar")
+                .expectBody(String.class).isEqualTo("trading:/painel/config:null");
+        cliente.get().uri("/api/painel/carteira/poupanca").headers(h -> h.setBearerAuth(token))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).isEqualTo("wallet:/painel/poupanca:null");
+        cliente.get().uri("/api/painel/usuarios").headers(h -> h.setBearerAuth(token))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String.class).isEqualTo("usuarios:/painel/usuarios:null");
+    }
+
+    @Test
+    void painelSemTokenOuComTokenDoJogoRecusa() {
+        cliente.get().uri("/api/painel/jogo/config").exchange().expectStatus().isUnauthorized();
+        // o JWT de um jogador nao abre o painel
+        cliente.get().uri("/api/painel/jogo/config").headers(h -> h.setBearerAuth(token("auth0|ana")))
+                .exchange().expectStatus().isUnauthorized();
+        cliente.get().uri("/api/painel/jogo/config").headers(h -> h.setBearerAuth("forjado.abc"))
+                .exchange().expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void senhaErradaNaoEntra() {
+        cliente.post().uri("/api/painel/login").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("usuario", "super-admin-oscar", "senha", "errada"))
+                .exchange()
+                .expectStatus().isUnauthorized();
+        cliente.post().uri("/api/painel/login").contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(Map.of("usuario", "outro", "senha", com.tigrinhotrader.gateway.painel.SenhaPainelTestes.SENHA))
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    @Test
+    void cabecalhoDoPainelForjadoPeloClienteESempreApagado() {
+        cliente.get().uri("/api/carteira").headers(h -> h.setBearerAuth(token("auth0|ana")))
+                .header("X-Painel-Admin", "hacker")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().doesNotExist("Eco-Painel");
+        cliente.get().uri("/api/cotacoes/BTCUSDT").header("X-Painel-Admin", "hacker")
+                .exchange()
+                .expectStatus().isOk()
+                .expectHeader().doesNotExist("Eco-Painel");
     }
 
     @AfterAll
@@ -680,6 +745,10 @@ class ApiGatewayApplicationTests {
             Headers recebidos = troca.getRequestHeaders();
             List<String> ids = recebidos.get("X-Usuario-Id");
             String usuario = ids == null ? "null" : String.join(",", ids);
+            List<String> painel = recebidos.get("X-Painel-Admin");
+            if (painel != null) {
+                troca.getResponseHeaders().set("Eco-Painel", String.join(",", painel));
+            }
             for (String campo : List.of("Email", "Nome", "Avatar", "Papel")) {
                 List<String> valores = recebidos.get("X-Usuario-" + campo);
                 if (valores != null) {

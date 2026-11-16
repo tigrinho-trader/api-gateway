@@ -229,6 +229,10 @@ services:
       AUTH_ISSUER: ${LOGIN_URL}/realms/tigrinho
       AUTH_JWKS_URI: http://keycloak:8080/realms/tigrinho/protocol/openid-connect/certs
       AUTH_AUDIENCE: tigrinho-api
+      # painel do super-admin: hash da senha e segredo dos tokens (gere com scripts/senha_painel.py)
+      PAINEL_USUARIO: ${PAINEL_USUARIO:-super-admin-oscar}
+      PAINEL_SENHA_HASH: ${PAINEL_SENHA_HASH:-}
+      PAINEL_SEGREDO: ${PAINEL_SEGREDO:-}
       AUTH_STATUS_TIMEOUT: 5s
       JAVA_TOOL_OPTIONS: "-Xmx320m"
     depends_on:

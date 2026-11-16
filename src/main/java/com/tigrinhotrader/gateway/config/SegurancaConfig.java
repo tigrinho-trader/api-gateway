@@ -35,7 +35,7 @@ import reactor.core.publisher.Mono;
  */
 @Configuration
 @EnableWebFluxSecurity
-@EnableConfigurationProperties(AuthPropriedades.class)
+@EnableConfigurationProperties({AuthPropriedades.class, PainelPropriedades.class})
 public class SegurancaConfig {
 
     /** Rotas publicas (tabela do contrato). Nelas o token e ignorado, mesmo se vier vencido. */
@@ -48,6 +48,15 @@ public class SegurancaConfig {
             new PathPatternParserServerWebExchangeMatcher("/api/jogos/flecha/regras", HttpMethod.GET),
             new PathPatternParserServerWebExchangeMatcher("/api/ordens/regras", HttpMethod.GET),
             new PathPatternParserServerWebExchangeMatcher("/api/ordens/barreira", HttpMethod.GET)));
+
+    /**
+     * Painel do super-admin: login proprio (usuario e senha do painel, nao o OpenID Connect). O Spring Security nao
+     * olha o token aqui; quem exige o token do painel e o FiltroPainel (e o login e o PainelLoginController).
+     */
+    static final ServerWebExchangeMatcher PAINEL = new PathPatternParserServerWebExchangeMatcher("/api/painel/**");
+
+    /** Onde o Bearer nao e um JWT do provedor: rotas publicas e o painel. */
+    static final ServerWebExchangeMatcher SEM_JWT = new OrServerWebExchangeMatcher(List.of(PUBLICAS, PAINEL));
 
     @Bean
     SecurityWebFilterChain cadeiaDeSeguranca(ServerHttpSecurity http, RespostasSeguranca respostas,
@@ -66,6 +75,7 @@ public class SegurancaConfig {
                 .requestCache(c -> c.requestCache(NoOpServerRequestCache.getInstance()))
                 .authorizeExchange(regras -> regras
                         .matchers(PUBLICAS).permitAll()
+                        .matchers(PAINEL).permitAll()
                         .pathMatchers("/api/**").authenticated()
                         // fora de /api so existe o actuator publico; o resto vira 404 (RespostasSeguranca)
                         .anyExchange().denyAll())
@@ -80,10 +90,10 @@ public class SegurancaConfig {
                 .build();
     }
 
-    /** Le o Bearer do cabecalho Authorization, menos nas rotas publicas. */
+    /** Le o Bearer do cabecalho Authorization, menos nas rotas publicas e no painel (que tem token proprio). */
     private static ServerAuthenticationConverter conversorIgnorandoPublicas() {
         ServerBearerTokenAuthenticationConverter padrao = new ServerBearerTokenAuthenticationConverter();
-        return exchange -> PUBLICAS.matches(exchange)
+        return exchange -> SEM_JWT.matches(exchange)
                 .flatMap(resultado -> resultado.isMatch() ? Mono.empty() : padrao.convert(exchange));
     }
 

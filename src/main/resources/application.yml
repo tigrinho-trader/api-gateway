@@ -56,6 +56,26 @@ spring:
             - Path=/api/notificacoes,/api/notificacoes/**
           filters:
             - StripPrefix=1
+        # Painel do super-admin (token do login do painel, conferido no FiltroPainel): /api/painel/<servico>/x ->
+        # /painel/x no servico. O login (POST /api/painel/login) e do proprio gateway.
+        - id: painel-jogo
+          uri: ${TRADING_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/painel/jogo/**
+          filters:
+            - RewritePath=/api/painel/jogo/(?<resto>.*), /painel/$\{resto}
+        - id: painel-carteira
+          uri: ${WALLET_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/painel/carteira/**
+          filters:
+            - RewritePath=/api/painel/carteira/(?<resto>.*), /painel/$\{resto}
+        - id: painel-usuarios
+          uri: ${USER_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/painel/usuarios
+          filters:
+            - SetPath=/painel/usuarios
 
 # Login OpenID Connect + checagem de conta (ver AuthPropriedades).
 # Padrao: Keycloak local (docker-compose, porta 8180). Para o Auth0, defina AUTH_ISSUER, AUTH_JWKS_URI e
@@ -69,6 +89,13 @@ tigrinho:
     usuarios-url: ${USER_URL:http://localhost:8085}
     cache-status: ${AUTH_STATUS_CACHE:30s}
     timeout-status: ${AUTH_STATUS_TIMEOUT:2s}
+  # Login do painel do super-admin. A senha nao fica aqui: so o hash (gere com scripts/senha_painel.py).
+  # Sem PAINEL_SENHA_HASH ou PAINEL_SEGREDO o painel fica desligado.
+  painel:
+    usuario: ${PAINEL_USUARIO:super-admin-oscar}
+    senha-hash: ${PAINEL_SENHA_HASH:}
+    segredo: ${PAINEL_SEGREDO:}
+    validade: ${PAINEL_VALIDADE:8h}
 
 management:
   endpoints:

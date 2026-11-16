@@ -205,6 +205,10 @@ services:
       AUTH_ISSUER: ${AUTH_ISSUER:-http://localhost:8180/realms/tigrinho}
       AUTH_JWKS_URI: ${AUTH_JWKS_URI:-http://keycloak:8080/realms/tigrinho/protocol/openid-connect/certs}
       AUTH_AUDIENCE: ${AUTH_AUDIENCE:-tigrinho-api}
+      # painel do super-admin: hash da senha e segredo dos tokens (gere com scripts/senha_painel.py)
+      PAINEL_USUARIO: ${PAINEL_USUARIO:-super-admin-oscar}
+      PAINEL_SENHA_HASH: ${PAINEL_SENHA_HASH:-}
+      PAINEL_SEGREDO: ${PAINEL_SEGREDO:-}
       # primeira chamada ao user-service recem-ligado pode passar de 2s numa maquina carregada
       AUTH_STATUS_TIMEOUT: ${AUTH_STATUS_TIMEOUT:-5s}
       AUTH_CLAIMS_NAMESPACE: ${AUTH_CLAIMS_NAMESPACE:-https://tigrinho-trader/}
